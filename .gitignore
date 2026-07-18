@@ -1,0 +1,23 @@
+# Compiled JavaScript
+*.js
+!jest.config.js
+
+# TypeScript declaration files
+*.d.ts
+
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+.envrc
+
+# CDK generated files
+.cdk.staging/
+cdk.out/
+
+# IDE files
+.idea/
+
+# OS files
+.DS_Store
