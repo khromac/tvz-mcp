@@ -5,9 +5,13 @@
     "build": "tsc",
     "watch": "tsc -w",
     "test": "jest",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
     "cdk": "cdk"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.5",
     "@swc/core": "^1.15.0",
     "@swc/jest": "^0.2.39",
     "@types/jest": "^30",
