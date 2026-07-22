@@ -1,10 +1,16 @@
+import { CfnDataSource, CfnKnowledgeBase } from 'aws-cdk-lib/aws-bedrock';
+import {
+  Effect,
+  PolicyDocument,
+  PolicyStatement,
+  Role,
+  ServicePrincipal,
+} from 'aws-cdk-lib/aws-iam';
+import { BlockPublicAccess, Bucket } from 'aws-cdk-lib/aws-s3';
+import { CfnIndex, CfnVectorBucket } from 'aws-cdk-lib/aws-s3vectors';
 import * as cdk from 'aws-cdk-lib/core';
-import {RemovalPolicy} from 'aws-cdk-lib/core';
-import {Construct} from 'constructs';
-import {BlockPublicAccess, Bucket} from "aws-cdk-lib/aws-s3";
-import {Effect, PolicyDocument, PolicyStatement, Role, ServicePrincipal} from "aws-cdk-lib/aws-iam";
-import {CfnKnowledgeBase, CfnDataSource} from "aws-cdk-lib/aws-bedrock";
-import {CfnIndex, CfnVectorBucket} from "aws-cdk-lib/aws-s3vectors";
+import { RemovalPolicy } from 'aws-cdk-lib/core';
+import type { Construct } from 'constructs';
 
 export class TvzMcpStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -12,7 +18,7 @@ export class TvzMcpStack extends cdk.Stack {
 
     // definiranje konstanta potrebne za stvaranje baza znanja i vektorskih indeksa
     const s3BucketName = `tvz-data-bucket-${this.account}`;
-    const s3VectorIndexName = "vector-index";
+    const s3VectorIndexName = 'vector-index';
 
     // definiramo koji model koristimo za procesiranje teksta
     const embeddingModelArn = `arn:aws:bedrock:${this.region}::foundation-model/amazon.titan-embed-text-v2:0`;
@@ -105,9 +111,8 @@ export class TvzMcpStack extends cdk.Stack {
             }),
           ],
         }),
-      }
+      },
     });
-
 
     // stvaramo Bedrock Knowledge Base koristeći S3 bucket i IAM ulogu
     const knowledgeBase = new CfnKnowledgeBase(this, 'knowledgeBase', {
@@ -121,19 +126,17 @@ export class TvzMcpStack extends cdk.Stack {
           embeddingModelConfiguration: {
             bedrockEmbeddingModelConfiguration: {
               embeddingDataType: 'FLOAT32',
-            }
-          }
+            },
+          },
         },
-
       },
       storageConfiguration: {
         type: 'S3_VECTORS',
         s3VectorsConfiguration: {
           indexArn: vectorIndex.attrIndexArn,
-        }
-      }
+        },
+      },
     });
-
 
     // stvori vezu izmedu S3 bucket i Bedrock knowledge base
     new CfnDataSource(this, 'KBS3DataSource', {
