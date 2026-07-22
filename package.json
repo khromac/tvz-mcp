@@ -11,12 +11,14 @@
     "cdk": "cdk"
   },
   "devDependencies": {
+    "@aws-sdk/client-bedrock-agent-runtime": "^3.1093.0",
     "@biomejs/biome": "^2.5.5",
     "@swc/core": "^1.15.0",
     "@swc/jest": "^0.2.39",
     "@types/jest": "^30",
     "@types/node": "^24.10.1",
     "aws-cdk": "2.1132.0",
+    "esbuild": "^0.28.1",
     "jest": "^30",
     "tsx": "^4.23.0",
     "typescript": "~7.0.2"
