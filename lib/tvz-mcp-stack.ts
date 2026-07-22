@@ -1,3 +1,11 @@
+import {
+  type IResource,
+  LambdaIntegration,
+  MockIntegration,
+  PassthroughBehavior,
+  Period,
+  RestApi,
+} from 'aws-cdk-lib/aws-apigateway';
 import { CfnDataSource, CfnKnowledgeBase } from 'aws-cdk-lib/aws-bedrock';
 import {
   Effect,
@@ -195,6 +203,45 @@ export class TvzMcpStack extends cdk.Stack {
       })
     );
 
+    // REST API kao javno sucelje za pretragu baze znanja
+    const api = new RestApi(this, 'TvzMcpApi', {
+      restApiName: 'tvz-mcp-api',
+      description: 'TVZ MCP API for querying the knowledge base',
+      deployOptions: {
+        throttlingRateLimit: 10,
+        throttlingBurstLimit: 20,
+      },
+    });
+
+    const queryResource = api.root.addResource('query');
+    queryResource.addMethod(
+      'POST',
+      new LambdaIntegration(fetchEmbeddingsFunction),
+      {
+        // API kljuc je obavezan za POST; OPTIONS preflight ostaje bez kljuca
+        apiKeyRequired: true,
+      }
+    );
+    addCorsOptions(queryResource);
+
+    // API kljuc i plan koristenja ogranicavaju potrosnju (produkcijski uzorak)
+    const apiKey = api.addApiKey('TvzMcpApiKey', {
+      apiKeyName: 'tvz-mcp-api-key',
+    });
+    const usagePlan = api.addUsagePlan('TvzMcpUsagePlan', {
+      name: 'tvz-mcp-usage-plan',
+      throttle: {
+        rateLimit: 10,
+        burstLimit: 20,
+      },
+      quota: {
+        limit: 1000,
+        period: Period.MONTH,
+      },
+    });
+    usagePlan.addApiStage({ stage: api.deploymentStage });
+    usagePlan.addApiKey(apiKey);
+
     // izlazne vrijednosti stacka
     new cdk.CfnOutput(this, 'KnowledgeBaseId', {
       value: knowledgeBase.attrKnowledgeBaseId,
@@ -202,5 +249,53 @@ export class TvzMcpStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'DataBucketName', {
       value: dataBucket.bucketName,
     });
+    new cdk.CfnOutput(this, 'ApiUrl', {
+      value: api.url,
+    });
+    // vrijednost kljuca se dohvaca nakon deploya:
+    // aws apigateway get-api-key --api-key <id> --include-value
+    new cdk.CfnOutput(this, 'ApiKeyId', {
+      value: apiKey.keyId,
+    });
   }
+}
+
+// dodaje OPTIONS metodu s CORS zaglavljima na resurs (mock integracija)
+function addCorsOptions(apiResource: IResource) {
+  apiResource.addMethod(
+    'OPTIONS',
+    new MockIntegration({
+      integrationResponses: [
+        {
+          statusCode: '200',
+          responseParameters: {
+            'method.response.header.Access-Control-Allow-Headers':
+              "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
+            'method.response.header.Access-Control-Allow-Origin': "'*'",
+            'method.response.header.Access-Control-Allow-Credentials':
+              "'false'",
+            'method.response.header.Access-Control-Allow-Methods':
+              "'OPTIONS,GET,PUT,POST,DELETE'",
+          },
+        },
+      ],
+      passthroughBehavior: PassthroughBehavior.NEVER,
+      requestTemplates: {
+        'application/json': '{"statusCode": 200}',
+      },
+    }),
+    {
+      methodResponses: [
+        {
+          statusCode: '200',
+          responseParameters: {
+            'method.response.header.Access-Control-Allow-Headers': true,
+            'method.response.header.Access-Control-Allow-Methods': true,
+            'method.response.header.Access-Control-Allow-Credentials': true,
+            'method.response.header.Access-Control-Allow-Origin': true,
+          },
+        },
+      ],
+    }
+  );
 }
