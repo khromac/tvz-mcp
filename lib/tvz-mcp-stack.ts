@@ -6,11 +6,14 @@ import {
   Role,
   ServicePrincipal,
 } from 'aws-cdk-lib/aws-iam';
+import { Runtime } from 'aws-cdk-lib/aws-lambda';
+import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { BlockPublicAccess, Bucket } from 'aws-cdk-lib/aws-s3';
 import { CfnIndex, CfnVectorBucket } from 'aws-cdk-lib/aws-s3vectors';
 import * as cdk from 'aws-cdk-lib/core';
 import { RemovalPolicy } from 'aws-cdk-lib/core';
 import type { Construct } from 'constructs';
+import { join } from 'node:path';
 
 export class TvzMcpStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -160,6 +163,44 @@ export class TvzMcpStack extends cdk.Stack {
         },
       },
       dataDeletionPolicy: 'DELETE',
+    });
+
+    // Lambda funkcija koja izvodi semanticku pretragu baze znanja
+    const fetchEmbeddingsFunction = new NodejsFunction(
+      this,
+      'FetchEmbeddingsFunction',
+      {
+        functionName: 'tvz-mcp-fetch-embeddings',
+        entry: join(__dirname, '../lambdas/fetchEmbeddings.ts'),
+        handler: 'handler',
+        runtime: Runtime.NODEJS_22_X,
+        bundling: {
+          forceDockerBundling: false,
+          externalModules: [],
+        },
+        reservedConcurrentExecutions: 5,
+        environment: {
+          KNOWLEDGE_BASE_ID: knowledgeBase.attrKnowledgeBaseId,
+          REGION: this.region,
+        },
+      }
+    );
+
+    // dozvola Lambda funkciji za dohvat iz baze znanja
+    fetchEmbeddingsFunction.addToRolePolicy(
+      new PolicyStatement({
+        effect: Effect.ALLOW,
+        actions: ['bedrock:Retrieve', 'bedrock:RetrieveAndGenerate'],
+        resources: [knowledgeBase.attrKnowledgeBaseArn],
+      })
+    );
+
+    // izlazne vrijednosti stacka
+    new cdk.CfnOutput(this, 'KnowledgeBaseId', {
+      value: knowledgeBase.attrKnowledgeBaseId,
+    });
+    new cdk.CfnOutput(this, 'DataBucketName', {
+      value: dataBucket.bucketName,
     });
   }
 }
