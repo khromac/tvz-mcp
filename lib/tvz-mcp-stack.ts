@@ -7,6 +7,11 @@ import {
   RestApi,
 } from 'aws-cdk-lib/aws-apigateway';
 import { CfnDataSource, CfnKnowledgeBase } from 'aws-cdk-lib/aws-bedrock';
+import { CfnBudget } from 'aws-cdk-lib/aws-budgets';
+import { Alarm, ComparisonOperator } from 'aws-cdk-lib/aws-cloudwatch';
+import { SnsAction } from 'aws-cdk-lib/aws-cloudwatch-actions';
+import { Topic } from 'aws-cdk-lib/aws-sns';
+import { EmailSubscription } from 'aws-cdk-lib/aws-sns-subscriptions';
 import {
   Effect,
   PolicyDocument,
@@ -19,12 +24,17 @@ import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { BlockPublicAccess, Bucket } from 'aws-cdk-lib/aws-s3';
 import { CfnIndex, CfnVectorBucket } from 'aws-cdk-lib/aws-s3vectors';
 import * as cdk from 'aws-cdk-lib/core';
-import { RemovalPolicy } from 'aws-cdk-lib/core';
+import { Duration, RemovalPolicy } from 'aws-cdk-lib/core';
 import type { Construct } from 'constructs';
 import { join } from 'node:path';
 
+export interface TvzMcpStackProps extends cdk.StackProps {
+  // e-mail adresa na koju stizu obavijesti o troskovima i alarmima
+  readonly alertEmail: string;
+}
+
 export class TvzMcpStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+  constructor(scope: Construct, id: string, props: TvzMcpStackProps) {
     super(scope, id, props);
 
     // definiranje konstanta potrebne za stvaranje baza znanja i vektorskih indeksa
@@ -241,6 +251,48 @@ export class TvzMcpStack extends cdk.Stack {
     });
     usagePlan.addApiStage({ stage: api.deploymentStage });
     usagePlan.addApiKey(apiKey);
+
+    // mjesecni budzet s obavijestima na 50% i 90% stvarne potrosnje
+    new CfnBudget(this, 'TvzMcpBudget', {
+      budget: {
+        budgetName: 'tvz-mcp-monthly-budget',
+        budgetType: 'COST',
+        timeUnit: 'MONTHLY',
+        budgetLimit: { amount: 100, unit: 'USD' },
+      },
+      notificationsWithSubscribers: [50, 90].map((threshold) => ({
+        notification: {
+          notificationType: 'ACTUAL',
+          comparisonOperator: 'GREATER_THAN',
+          threshold,
+          thresholdType: 'PERCENTAGE',
+        },
+        subscribers: [
+          {
+            subscriptionType: 'EMAIL',
+            address: props.alertEmail,
+          },
+        ],
+      })),
+    });
+
+    // SNS tema i alarm za neocekivano velik broj poziva Lambda funkcije
+    const alertTopic = new Topic(this, 'TvzMcpAlertTopic');
+    alertTopic.addSubscription(new EmailSubscription(props.alertEmail));
+
+    const invocationThreshold = 200;
+    const invocationAlarm = new Alarm(this, 'TvzMcpInvocationAlarm', {
+      alarmName: 'tvz-mcp-high-invocations',
+      metric: fetchEmbeddingsFunction.metricInvocations({
+        period: Duration.hours(1),
+        statistic: 'Sum',
+      }),
+      threshold: invocationThreshold,
+      evaluationPeriods: 1,
+      comparisonOperator: ComparisonOperator.GREATER_THAN_THRESHOLD,
+      alarmDescription: `Lambda invocations exceeding ${invocationThreshold} calls/hour`,
+    });
+    invocationAlarm.addAlarmAction(new SnsAction(alertTopic));
 
     // izlazne vrijednosti stacka
     new cdk.CfnOutput(this, 'KnowledgeBaseId', {

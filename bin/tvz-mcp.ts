@@ -9,4 +9,5 @@ new TvzMcpStack(app, 'TvzMcpStack', {
     account: process.env.CDK_DEFAULT_ACCOUNT,
     region: process.env.CDK_DEFAULT_REGION ?? 'eu-central-1',
   },
+  alertEmail: 'mihael.smrcek05@gmail.com',
 });
