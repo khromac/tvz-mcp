@@ -1,3 +1,4 @@
+import { join } from 'node:path';
 import {
   type IResource,
   LambdaIntegration,
@@ -10,8 +11,6 @@ import { CfnDataSource, CfnKnowledgeBase } from 'aws-cdk-lib/aws-bedrock';
 import { CfnBudget } from 'aws-cdk-lib/aws-budgets';
 import { Alarm, ComparisonOperator } from 'aws-cdk-lib/aws-cloudwatch';
 import { SnsAction } from 'aws-cdk-lib/aws-cloudwatch-actions';
-import { Topic } from 'aws-cdk-lib/aws-sns';
-import { EmailSubscription } from 'aws-cdk-lib/aws-sns-subscriptions';
 import {
   Effect,
   PolicyDocument,
@@ -21,12 +20,14 @@ import {
 } from 'aws-cdk-lib/aws-iam';
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
-import { BlockPublicAccess, Bucket } from 'aws-cdk-lib/aws-s3';
+import { BlockPublicAccess, Bucket, EventType } from 'aws-cdk-lib/aws-s3';
+import { LambdaDestination } from 'aws-cdk-lib/aws-s3-notifications';
 import { CfnIndex, CfnVectorBucket } from 'aws-cdk-lib/aws-s3vectors';
+import { Topic } from 'aws-cdk-lib/aws-sns';
+import { EmailSubscription } from 'aws-cdk-lib/aws-sns-subscriptions';
 import * as cdk from 'aws-cdk-lib/core';
 import { Duration, RemovalPolicy } from 'aws-cdk-lib/core';
 import type { Construct } from 'constructs';
-import { join } from 'node:path';
 
 export interface TvzMcpStackProps extends cdk.StackProps {
   // e-mail adresa na koju stizu obavijesti o troskovima i alarmima
@@ -160,7 +161,7 @@ export class TvzMcpStack extends cdk.Stack {
     });
 
     // stvori vezu izmedu S3 bucket i Bedrock knowledge base
-    new CfnDataSource(this, 'KBS3DataSource', {
+    const s3DataSource = new CfnDataSource(this, 'KBS3DataSource', {
       knowledgeBaseId: knowledgeBase.attrKnowledgeBaseId,
       name: 'tvz-s3-data-source',
       description: 'S3 bucket containing TVZ documentation',
@@ -211,6 +212,56 @@ export class TvzMcpStack extends cdk.Stack {
         actions: ['bedrock:Retrieve', 'bedrock:RetrieveAndGenerate'],
         resources: [knowledgeBase.attrKnowledgeBaseArn],
       })
+    );
+
+    // Lambda funkcija koja pokrece sinkronizaciju baze znanja nakon S3 promjene.
+    // reservedConcurrentExecutions: 1 serijalizira navale uploada u jedan po jedan
+    // poziv, cime se izbjegava lavina paralelnih ingestion pokusaja
+    const startIngestionFunction = new NodejsFunction(
+      this,
+      'StartIngestionFunction',
+      {
+        functionName: 'tvz-mcp-start-ingestion',
+        entry: join(__dirname, '../lambdas/startIngestion.ts'),
+        handler: 'handler',
+        runtime: Runtime.NODEJS_22_X,
+        bundling: {
+          forceDockerBundling: false,
+          externalModules: [],
+        },
+        reservedConcurrentExecutions: 1,
+        environment: {
+          KNOWLEDGE_BASE_ID: knowledgeBase.attrKnowledgeBaseId,
+          DATA_SOURCE_ID: s3DataSource.attrDataSourceId,
+          REGION: this.region,
+        },
+      }
+    );
+
+    // dozvola za pokretanje i pracenje ingestion jobova;
+    // resurs za ove akcije je ARN baze znanja
+    startIngestionFunction.addToRolePolicy(
+      new PolicyStatement({
+        effect: Effect.ALLOW,
+        actions: [
+          'bedrock:StartIngestionJob',
+          'bedrock:GetIngestionJob',
+          'bedrock:ListIngestionJobs',
+        ],
+        resources: [knowledgeBase.attrKnowledgeBaseArn],
+      })
+    );
+
+    // svaka promjena u data bucketu automatski pokrece sinkronizaciju;
+    // dataDeletionPolicy DELETE znaci da brisanje objekta uklanja i njegove
+    // vektore pri sljedecoj sinkronizaciji
+    dataBucket.addEventNotification(
+      EventType.OBJECT_CREATED,
+      new LambdaDestination(startIngestionFunction)
+    );
+    dataBucket.addEventNotification(
+      EventType.OBJECT_REMOVED,
+      new LambdaDestination(startIngestionFunction)
     );
 
     // REST API kao javno sucelje za pretragu baze znanja
@@ -300,6 +351,9 @@ export class TvzMcpStack extends cdk.Stack {
     });
     new cdk.CfnOutput(this, 'DataBucketName', {
       value: dataBucket.bucketName,
+    });
+    new cdk.CfnOutput(this, 'DataSourceId', {
+      value: s3DataSource.attrDataSourceId,
     });
     new cdk.CfnOutput(this, 'ApiUrl', {
       value: api.url,

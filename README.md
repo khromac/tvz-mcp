@@ -9,6 +9,7 @@ indeksom, s REST API-jem za semanticku pretragu dokumentacije.
 - **S3 Vectors bucket + indeks** — pohrana embeddinga (float32, 1024 dimenzije, cosine)
 - **Bedrock Knowledge Base** — Titan Embed Text v2 embeddinzi, semanticki chunking
 - **Lambda** (`tvz-mcp-fetch-embeddings`) — dohvat rezultata preko Bedrock Retrieve API-ja
+- **Lambda** (`tvz-mcp-start-ingestion`) — automatska sinkronizacija baze znanja na S3 promjene (StartIngestionJob)
 - **API Gateway** — `POST /query`, zasticen API kljucem i planom koristenja
 - **Budzet + alarm** — mjesecni AWS budzet i CloudWatch alarm na broj poziva
 
@@ -43,6 +44,25 @@ curl -X POST "<ApiUrl>/query" \
 
 Opcionalno tijelo podrzava i `filter` (mapa kljuc-vrijednost za metadata
 filtriranje) te `maxResults` (zadano 5).
+
+## Automatska ingestija
+
+Upload ili brisanje objekta u data bucketu automatski pokrece ingestion job koji
+sinkronizira bazu znanja. Brisanje objekta uklanja i pripadne vektore
+(`dataDeletionPolicy` DELETE) pri sljedecoj sinkronizaciji.
+
+Ako vise datoteka stigne brzo uzastopno, dio uploada moze pasti u
+ConflictException prozor (job je vec u tijeku) i nece pokrenuti novi job. U tom
+slucaju pokrenuti jos jedan upload ili rucno pokrenuti sinkronizaciju:
+
+```bash
+aws bedrock-agent start-ingestion-job \
+  --knowledge-base-id <KnowledgeBaseId iz outputa> \
+  --data-source-id <DataSourceId iz outputa>
+```
+
+Preporuka: `.metadata.json` datoteku uploadati prije pripadnog dokumenta kako bi
+metapodaci bili dostupni pri indeksiranju.
 
 ## Napomene za deploy
 
