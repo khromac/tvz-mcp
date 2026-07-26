@@ -44,11 +44,10 @@ curl -X POST "<ApiUrl>/query" \
   -d '{"query": "sto je zavrsni rad", "maxResults": 5}'
 ```
 
-Opcionalno tijelo podrzava i `filter` (mapa kljuc-vrijednost za metadata
-filtriranje) te `maxResults` (1-20, zadano 5).
+Uz obavezni `query`, tijelo podrzava i `maxResults` (1-20, zadano 5).
 
 Odgovor sadrzi spojeni tekst (`formatted`) i strukturirane rezultate
-(`results`) s ocjenom relevantnosti, izvorom i metapodacima dokumenta:
+(`results`) s ocjenom relevantnosti i izvornim dokumentom:
 
 ```json
 {
@@ -57,8 +56,7 @@ Odgovor sadrzi spojeni tekst (`formatted`) i strukturirane rezultate
     {
       "text": "<tekst prvog dijela>",
       "score": 0.62,
-      "source": "s3://tvz-data-bucket-<account>/pravilnik.pdf",
-      "metadata": { "category": "pravilnik" }
+      "source": "s3://tvz-data-bucket-<account>/pravilnik.pdf"
     }
   ]
 }
@@ -109,8 +107,21 @@ aws bedrock-agent start-ingestion-job \
   --data-source-id <DataSourceId iz outputa>
 ```
 
-Preporuka: `.metadata.json` datoteku uploadati prije pripadnog dokumenta kako bi
-metapodaci bili dostupni pri indeksiranju.
+PDF-ovi se parsiraju vizualnim modelom (`BEDROCK_FOUNDATION_MODEL`), pa i
+skenirani dokumenti bez tekstualnog sloja zavrsavaju u bazi znanja kao tekst.
+Parsiranje se naplacuje po stranici i primjenjuje se na sve PDF-ove, i one koji
+vec imaju tekst.
+
+Sinkronizacija je inkrementalna — obraduju se samo nove, promijenjene i obrisane
+datoteke. Datoteke vece od 50 MB preskacu se bez greske, pa nakon vece objave
+vrijedi provjeriti statistiku posla:
+
+```bash
+aws bedrock-agent get-ingestion-job \
+  --knowledge-base-id <KnowledgeBaseId> \
+  --data-source-id <DataSourceId> \
+  --ingestion-job-id <id> --query 'ingestionJob.statistics'
+```
 
 ## Napomene za deploy
 

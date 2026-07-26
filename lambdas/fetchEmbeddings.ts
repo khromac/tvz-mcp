@@ -1,6 +1,5 @@
 import {
   BedrockAgentRuntimeClient,
-  type RetrievalFilter,
   RetrieveCommand,
 } from '@aws-sdk/client-bedrock-agent-runtime';
 
@@ -13,24 +12,6 @@ const responseHeaders = {
   'Content-Type': 'application/json',
   'Access-Control-Allow-Origin': '*',
 };
-
-/**
- * Gradi metadata filter za pretragu baze znanja iz opcionalne mape filtera.
- * Jedan uvjet postaje "equals", vise uvjeta se spaja u "andAll".
- */
-function buildFilter(
-  filterMap?: Record<string, string>
-): RetrievalFilter | undefined {
-  if (!filterMap) return undefined;
-
-  const conditions: RetrievalFilter[] = Object.entries(filterMap)
-    .filter(([, v]) => v !== undefined && v !== '')
-    .map(([key, value]) => ({ equals: { key, value } }));
-
-  if (conditions.length === 0) return undefined;
-  if (conditions.length === 1) return conditions[0];
-  return { andAll: conditions };
-}
 
 export const handler = async (event: any): Promise<any> => {
   // parsiranje tijela zahtjeva uz zastitu od nevaljanog JSON-a
@@ -45,7 +26,7 @@ export const handler = async (event: any): Promise<any> => {
     };
   }
 
-  const { query, filter, maxResults = 5 } = body;
+  const { query, maxResults = 5 } = body;
 
   if (!query) {
     return {
@@ -58,8 +39,6 @@ export const handler = async (event: any): Promise<any> => {
   // API se poziva i izravno (curl), pa se maxResults ogranicava i ovdje
   const numberOfResults = Math.min(Math.max(Number(maxResults) || 5, 1), 20);
 
-  const metadataFilter = buildFilter(filter);
-
   try {
     // semanticka pretraga baze znanja preko Bedrock Retrieve API-ja
     const retrieved = await client.send(
@@ -69,7 +48,6 @@ export const handler = async (event: any): Promise<any> => {
         retrievalConfiguration: {
           vectorSearchConfiguration: {
             numberOfResults,
-            ...(metadataFilter && { filter: metadataFilter }),
           },
         },
       })
@@ -85,19 +63,11 @@ export const handler = async (event: any): Promise<any> => {
       })
       .join('\n\n');
 
-    // strukturirani rezultati uz `formatted` (koji ostaje radi kompatibilnosti);
-    // Bedrockovi interni metapodaci (x-amz-bedrock-kb-*) se izostavljaju jer je
-    // izvor vec izlozen kao `source`, a pozivatelju su korisni samo atributi
-    // iz vlastitih .metadata.json datoteka
+    // strukturirani rezultati uz `formatted` (koji ostaje radi kompatibilnosti)
     const results = retrievalResults.map((r) => ({
       text: r.content?.text?.trim() ?? '',
       score: r.score,
       source: r.location?.s3Location?.uri,
-      metadata: Object.fromEntries(
-        Object.entries(r.metadata ?? {}).filter(
-          ([key]) => !key.startsWith('x-amz-bedrock-kb-')
-        )
-      ),
     }));
 
     return {

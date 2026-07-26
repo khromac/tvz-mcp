@@ -10,10 +10,6 @@ const resultShape = {
       text: z.string().describe('Retrieved text chunk'),
       score: z.number().optional().describe('Relevance score (0-1)'),
       source: z.string().optional().describe('S3 URI of the source document'),
-      metadata: z
-        .record(z.unknown())
-        .optional()
-        .describe('Custom metadata attributes of the source document'),
     })
   ),
 };
@@ -21,10 +17,7 @@ const resultShape = {
 /** Slaze citljiv tekstualni prikaz rezultata za klijente bez structuredContent podrske. */
 function formatResults(results: SearchResult[]): string {
   if (results.length === 0) {
-    return (
-      'No results found. Try rephrasing the query (Croatian works best) or ' +
-      'removing the metadata filter.'
-    );
+    return 'No results found. Try rephrasing the query (Croatian works best).';
   }
 
   return results
@@ -63,13 +56,6 @@ export function createServer(config: Config): McpServer {
           .string()
           .min(1)
           .describe('Natural-language search query (Croatian recommended)'),
-        filter: z
-          .record(z.string())
-          .optional()
-          .describe(
-            'Optional metadata equality filter, e.g. ' +
-              '{"category": "pravilnik"}. Multiple keys are ANDed.'
-          ),
         maxResults: z
           .number()
           .int()
@@ -84,11 +70,10 @@ export function createServer(config: Config): McpServer {
         openWorldHint: true,
       },
     },
-    async ({ query, filter, maxResults }) => {
+    async ({ query, maxResults }) => {
       try {
         const results = await searchDocs(config, {
           query,
-          filter,
           maxResults,
         });
         return {

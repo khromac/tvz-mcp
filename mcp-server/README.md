@@ -76,12 +76,11 @@ nista) i open-world (dohvaca podatke izvan konteksta razgovora).
 | Parametar | Tip | Zadano | Opis |
 | --- | --- | --- | --- |
 | `query` | string | — | Upit prirodnim jezikom; hrvatski daje najbolje rezultate jer je korpus na hrvatskom |
-| `filter` | mapa string→string | — | Filtar po metapodacima, npr. `{"category": "pravilnik"}`; vise kljuceva se spaja logickim I |
 | `maxResults` | broj (1–20) | 5 | Broj dijelova teksta koji se vracaju |
 
-Odgovor sadrzi strukturirane rezultate (`text`, `score`, `source`, `metadata`) i
-citljivu tekstualnu inacicu s ocjenom relevantnosti i izvorom po rezultatu, pa
-model moze navesti iz kojeg dokumenta odgovor dolazi.
+Odgovor sadrzi strukturirane rezultate (`text`, `score`, `source`) i citljivu
+tekstualnu inacicu s ocjenom relevantnosti i izvorom po rezultatu, pa model moze
+navesti iz kojeg dokumenta odgovor dolazi.
 
 Ako backend jos vraca stari oblik odgovora (samo `formatted`, prije obogacivanja
 Lambda funkcije), posluzitelj taj tekst zamata u jedan rezultat i nastavlja

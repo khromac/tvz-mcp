@@ -5,12 +5,10 @@ export interface SearchResult {
   text: string;
   score?: number;
   source?: string;
-  metadata?: Record<string, unknown>;
 }
 
 export interface SearchParams {
   query: string;
-  filter?: Record<string, string>;
   maxResults?: number;
 }
 

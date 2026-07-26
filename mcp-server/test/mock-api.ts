@@ -13,13 +13,11 @@ const chunks = [
     text: 'Zavrsni rad na strucnom studiju nosi 10 ECTS bodova i prijavljuje se putem studomata.',
     score: 0.62,
     source: 's3://tvz-data-bucket-123456789012/pravilnik-o-zavrsnom-radu.pdf',
-    metadata: { category: 'pravilnik' },
   },
   {
     text: 'Student moze prijaviti temu zavrsnog rada nakon odslusanog petog semestra.',
     score: 0.55,
     source: 's3://tvz-data-bucket-123456789012/pravilnik-o-studiranju.pdf',
-    metadata: { category: 'pravilnik' },
   },
 ];
 
