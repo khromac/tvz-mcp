@@ -197,7 +197,6 @@ export class TvzMcpStack extends cdk.Stack {
           forceDockerBundling: false,
           externalModules: [],
         },
-        reservedConcurrentExecutions: 5,
         environment: {
           KNOWLEDGE_BASE_ID: knowledgeBase.attrKnowledgeBaseId,
           REGION: this.region,
@@ -215,8 +214,10 @@ export class TvzMcpStack extends cdk.Stack {
     );
 
     // Lambda funkcija koja pokrece sinkronizaciju baze znanja nakon S3 promjene.
-    // reservedConcurrentExecutions: 1 serijalizira navale uploada u jedan po jedan
-    // poziv, cime se izbjegava lavina paralelnih ingestion pokusaja
+    // Rezervirana konkurentnost se ne postavlja: racun ima limit od 10 istovremenih
+    // izvodenja, a AWS ne dopusta da nerezervirani dio padne ispod 10, pa je svaka
+    // rezervacija odbijena. Paralelni pozivi su ionako bezopasni jer handler hvata
+    // ConflictException kad je ingestion job vec u tijeku
     const startIngestionFunction = new NodejsFunction(
       this,
       'StartIngestionFunction',
@@ -229,7 +230,6 @@ export class TvzMcpStack extends cdk.Stack {
           forceDockerBundling: false,
           externalModules: [],
         },
-        reservedConcurrentExecutions: 1,
         environment: {
           KNOWLEDGE_BASE_ID: knowledgeBase.attrKnowledgeBaseId,
           DATA_SOURCE_ID: s3DataSource.attrDataSourceId,
