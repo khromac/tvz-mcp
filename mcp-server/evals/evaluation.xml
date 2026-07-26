@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Evaluacijski skup za tvz_search_docs alat.
+
+  VAZNO: odgovori su namjerno ostavljeni kao TODO. Korpus TVZ dokumentacije nije
+  dio ovog repozitorija, pa se tocan odgovor ne moze utvrditi bez provjere nad
+  deployanim sustavom. Postupak provjere opisan je u evals/README.md — tek nakon
+  njega ovaj skup postaje upotrebljiv kao mjerilo.
+
+  Sva pitanja su neovisna jedno o drugom, iskljucivo za citanje (read-only) i
+  odgovoriva s jednim do dva poziva alata.
+-->
+<evaluation>
+  <qa_pair>
+    <question>Koliko ECTS bodova nosi zavrsni rad na strucnom studiju?</question>
+    <answer>TODO: provjeriti u korpusu i upisati tocan odgovor</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Koji su uvjeti koje student mora ispuniti da bi prijavio temu zavrsnog rada?</question>
+    <answer>TODO: provjeriti u korpusu i upisati tocan odgovor</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Koliko puta student smije izaci na ispit iz istog predmeta prije nego izgubi pravo na redovno polaganje?</question>
+    <answer>TODO: provjeriti u korpusu i upisati tocan odgovor</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Koliko ECTS bodova student mora skupiti da bi upisao sljedecu godinu studija?</question>
+    <answer>TODO: provjeriti u korpusu i upisati tocan odgovor</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Pod kojim uvjetima student moze zatraziti mirovanje studentskih obveza?</question>
+    <answer>TODO: provjeriti u korpusu i upisati tocan odgovor</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Koliko ispitnih rokova se organizira u jednoj akademskoj godini i kako su rasporedeni?</question>
+    <answer>TODO: provjeriti u korpusu i upisati tocan odgovor</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Koji je rok za podnosenje prigovora na ocjenu ispita?</question>
+    <answer>TODO: provjeriti u korpusu i upisati tocan odgovor</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Koje su strucne studije i koji akademski nazivi se stjecu njihovim zavrsetkom na racunarstvu?</question>
+    <answer>TODO: provjeriti u korpusu i upisati tocan odgovor</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Koliko traje strucna praksa i koliko ECTS bodova nosi?</question>
+    <answer>TODO: provjeriti u korpusu i upisati tocan odgovor</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Koji je postupak obrane zavrsnog rada i tko cini povjerenstvo za obranu?</question>
+    <answer>TODO: provjeriti u korpusu i upisati tocan odgovor</answer>
+  </qa_pair>
+</evaluation>

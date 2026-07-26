@@ -1,0 +1,52 @@
+{
+  "name": "tvz-mcp-server",
+  "version": "0.1.0",
+  "description": "MCP posluzitelj za semanticku pretragu TVZ dokumentacije (Bedrock Knowledge Base)",
+  "license": "MIT",
+  "author": "msmrcek",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/khromac/tvz-mcp.git",
+    "directory": "mcp-server"
+  },
+  "homepage": "https://github.com/khromac/tvz-mcp/tree/main/mcp-server#readme",
+  "bugs": "https://github.com/khromac/tvz-mcp/issues",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "tvz",
+    "rag",
+    "bedrock"
+  ],
+  "type": "module",
+  "bin": {
+    "tvz-mcp-server": "dist/index.js"
+  },
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "mock-api": "tsx test/mock-api.ts",
+    "smoke": "tsx test/smoke.ts",
+    "inspector": "npx @modelcontextprotocol/inspector node dist/index.js",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.21.1",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "tsx": "^4.23.0",
+    "typescript": "~7.0.2"
+  }
+}

@@ -55,6 +55,9 @@ export const handler = async (event: any): Promise<any> => {
     };
   }
 
+  // API se poziva i izravno (curl), pa se maxResults ogranicava i ovdje
+  const numberOfResults = Math.min(Math.max(Number(maxResults) || 5, 1), 20);
+
   const metadataFilter = buildFilter(filter);
 
   try {
@@ -65,27 +68,42 @@ export const handler = async (event: any): Promise<any> => {
         retrievalQuery: { text: query },
         retrievalConfiguration: {
           vectorSearchConfiguration: {
-            numberOfResults: maxResults,
+            numberOfResults,
             ...(metadataFilter && { filter: metadataFilter }),
           },
         },
       })
     );
 
-    const results = retrieved.retrievalResults ?? [];
+    const retrievalResults = retrieved.retrievalResults ?? [];
 
     // rezultati se spajaju u jedan tekst odvojen separatorima
-    const formatted = results
+    const formatted = retrievalResults
       .map((r) => {
         const text = r.content?.text?.trim() ?? '';
         return `---\n\n${text}`;
       })
       .join('\n\n');
 
+    // strukturirani rezultati uz `formatted` (koji ostaje radi kompatibilnosti);
+    // Bedrockovi interni metapodaci (x-amz-bedrock-kb-*) se izostavljaju jer je
+    // izvor vec izlozen kao `source`, a pozivatelju su korisni samo atributi
+    // iz vlastitih .metadata.json datoteka
+    const results = retrievalResults.map((r) => ({
+      text: r.content?.text?.trim() ?? '',
+      score: r.score,
+      source: r.location?.s3Location?.uri,
+      metadata: Object.fromEntries(
+        Object.entries(r.metadata ?? {}).filter(
+          ([key]) => !key.startsWith('x-amz-bedrock-kb-')
+        )
+      ),
+    }));
+
     return {
       statusCode: 200,
       headers: responseHeaders,
-      body: JSON.stringify({ formatted }),
+      body: JSON.stringify({ formatted, results }),
     };
   } catch (err) {
     console.error('Retrieve failed:', err);

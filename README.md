@@ -12,6 +12,8 @@ indeksom, s REST API-jem za semanticku pretragu dokumentacije.
 - **Lambda** (`tvz-mcp-start-ingestion`) — automatska sinkronizacija baze znanja na S3 promjene (StartIngestionJob)
 - **API Gateway** — `POST /query`, zasticen API kljucem i planom koristenja
 - **Budzet + alarm** — mjesecni AWS budzet i CloudWatch alarm na broj poziva
+- **MCP posluzitelj** (`mcp-server/`) — lokalni MCP posluzitelj koji AI
+  klijentima izlaze pretragu preko ovog API-ja
 
 ## Naredbe
 
@@ -43,7 +45,53 @@ curl -X POST "<ApiUrl>/query" \
 ```
 
 Opcionalno tijelo podrzava i `filter` (mapa kljuc-vrijednost za metadata
-filtriranje) te `maxResults` (zadano 5).
+filtriranje) te `maxResults` (1-20, zadano 5).
+
+Odgovor sadrzi spojeni tekst (`formatted`) i strukturirane rezultate
+(`results`) s ocjenom relevantnosti, izvorom i metapodacima dokumenta:
+
+```json
+{
+  "formatted": "---\n\n<tekst prvog dijela>\n\n---\n\n<tekst drugog dijela>",
+  "results": [
+    {
+      "text": "<tekst prvog dijela>",
+      "score": 0.62,
+      "source": "s3://tvz-data-bucket-<account>/pravilnik.pdf",
+      "metadata": { "category": "pravilnik" }
+    }
+  ]
+}
+```
+
+## MCP posluzitelj
+
+`mcp-server/` sadrzi zaseban npm paket `tvz-mcp-server` — lokalni MCP
+posluzitelj koji alat `tvz_search_docs` izlaze AI klijentima (Claude Desktop,
+Claude Code) i pod haubom poziva gornji `POST /query`. Pokrece se preko `npx`,
+bez klonanja repozitorija:
+
+```json
+{
+  "mcpServers": {
+    "tvz-docs": {
+      "command": "npx",
+      "args": ["-y", "tvz-mcp-server"],
+      "env": {
+        "TVZ_MCP_API_URL": "<ApiUrl iz outputa>",
+        "TVZ_MCP_API_KEY": "<vrijednost kljuca>"
+      }
+    }
+  }
+}
+```
+
+Paket nije objavljen na npm registry — gornji `npx` oblik dokumentira zamisljeni
+model distribucije, u kojem svaki konzument pokrece vlastitu instancu s vlastitim
+API kljucem. Za stvarno pokretanje koristi se lokalno izgradena verzija
+(`node .../mcp-server/dist/index.js`), opisana u
+[`mcp-server/README.md`](./mcp-server/README.md), gdje se nalaze i upute za
+instalaciju, opis alata te evaluacijski skup.
 
 ## Automatska ingestija
 
