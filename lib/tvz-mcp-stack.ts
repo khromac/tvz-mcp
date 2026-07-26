@@ -344,13 +344,16 @@ export class TvzMcpStack extends cdk.Stack {
     usagePlan.addApiStage({ stage: api.deploymentStage });
     usagePlan.addApiKey(apiKey);
 
-    // mjesecni budzet s obavijestima na 50% i 90% stvarne potrosnje
+    // Mjesecni budzet s obavijestima na 50% i 90% stvarne potrosnje. Limit je
+    // postavljen prema raspolozivim kreditima ($200 ukupno), a ne prema
+    // ocekivanoj potrosnji — budzet od $100 mjesecno javio bi se tek kad je
+    // polovica kredita vec potrosena.
     new CfnBudget(this, 'TvzMcpBudget', {
       budget: {
         budgetName: 'tvz-mcp-monthly-budget',
         budgetType: 'COST',
         timeUnit: 'MONTHLY',
-        budgetLimit: { amount: 100, unit: 'USD' },
+        budgetLimit: { amount: 25, unit: 'USD' },
       },
       notificationsWithSubscribers: [50, 90].map((threshold) => ({
         notification: {
