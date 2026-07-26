@@ -45,6 +45,31 @@ export class TvzMcpStack extends cdk.Stack {
     // definiramo koji model koristimo za procesiranje teksta
     const embeddingModelArn = `arn:aws:bedrock:${this.region}::foundation-model/amazon.titan-embed-text-v2:0`;
 
+    // Model za parsiranje dokumenata. Skenirani PDF-ovi nemaju tekstualni sloj, pa
+    // ih zadani parser ucitava kao prazne chunkove; vizualni model umjesto toga
+    // procita sliku svake stranice i vrati tekst.
+    const parsingModelId = 'anthropic.claude-haiku-4-5-20251001-v1:0';
+    const parsingModelArn = `arn:aws:bedrock:${this.region}:${this.account}:inference-profile/eu.${parsingModelId}`;
+
+    // Inference profil rutira pozive po EU regijama, pa dozvola mora pokriti i
+    // sam profil i sve modele na koje moze preusmjeriti. Sve su regije u EU, sto
+    // znaci da tekst dokumenata ne napusta EU.
+    const parsingModelRegions = [
+      'eu-central-1',
+      'eu-west-1',
+      'eu-west-3',
+      'eu-north-1',
+      'eu-south-1',
+      'eu-south-2',
+    ];
+    const parsingModelArns = [
+      parsingModelArn,
+      ...parsingModelRegions.map(
+        (region) =>
+          `arn:aws:bedrock:${region}::foundation-model/${parsingModelId}`
+      ),
+    ];
+
     // stvaramo S3 bucket za pohranu vektorskih indeksa
     const dataBucket = new Bucket(this, s3BucketName, {
       bucketName: s3BucketName,
@@ -131,6 +156,12 @@ export class TvzMcpStack extends cdk.Stack {
               actions: ['bedrock:InvokeModel'],
               resources: [embeddingModelArn],
             }),
+            new PolicyStatement({
+              sid: 'BedrockInvokeParsingModel',
+              effect: Effect.ALLOW,
+              actions: ['bedrock:InvokeModel'],
+              resources: parsingModelArns,
+            }),
           ],
         }),
       },
@@ -178,6 +209,16 @@ export class TvzMcpStack extends cdk.Stack {
             maxTokens: 300,
             bufferSize: 1,
             breakpointPercentileThreshold: 95,
+          },
+        },
+        // parsingModality se namjerno ne postavlja na MULTIMODAL: time bi se slike
+        // izdvajale kao zasebni objekti i baza znanja bi trazila dodatni S3
+        // spremnik. Tekstualno parsiranje svejedno salje slike stranica modelu,
+        // sto je upravo ono sto skenirani dokumenti trebaju.
+        parsingConfiguration: {
+          parsingStrategy: 'BEDROCK_FOUNDATION_MODEL',
+          bedrockFoundationModelConfiguration: {
+            modelArn: parsingModelArn,
           },
         },
       },
