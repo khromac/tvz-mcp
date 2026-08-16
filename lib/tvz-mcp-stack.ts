@@ -162,6 +162,14 @@ export class TvzMcpStack extends cdk.Stack {
               actions: ['bedrock:InvokeModel'],
               resources: parsingModelArns,
             }),
+            // Bedrock Agent pri stvaranju data sourcea validira parsing model
+            // pozivom GetInferenceProfile s KB ulogom — bez ovoga stvaranje pada
+            new PolicyStatement({
+              sid: 'BedrockGetParsingInferenceProfile',
+              effect: Effect.ALLOW,
+              actions: ['bedrock:GetInferenceProfile'],
+              resources: [parsingModelArn],
+            }),
           ],
         }),
       },
