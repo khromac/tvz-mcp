@@ -94,6 +94,17 @@ export class TvzMcpStack extends cdk.Stack {
       dataType: 'float32',
       dimension: 1024,
       distanceMetric: 'cosine',
+      // Metapodaci su po zadanom filtrabilni, a filtrabilni dio je ogranicen na
+      // 2048 bajtova po vektoru. Baza znanja u njega sprema cijeli tekst chunka,
+      // pa chunk od 300 tokena hrvatskog teksta probije granicu i ingestija padne
+      // s "Filterable metadata must have at most 2048 bytes". Oba kljuca koja
+      // Bedrock koristi zato oznacavamo kao nefiltrabilna.
+      metadataConfiguration: {
+        nonFilterableMetadataKeys: [
+          'AMAZON_BEDROCK_TEXT',
+          'AMAZON_BEDROCK_METADATA',
+        ],
+      },
     });
     vectorIndex.applyRemovalPolicy(RemovalPolicy.DESTROY);
     vectorIndex.addDependency(vectorBucket);
