@@ -45,6 +45,31 @@ export class TvzMcpStack extends cdk.Stack {
     // definiramo koji model koristimo za procesiranje teksta
     const embeddingModelArn = `arn:aws:bedrock:${this.region}::foundation-model/amazon.titan-embed-text-v2:0`;
 
+    // Model za parsiranje dokumenata. Skenirani PDF-ovi nemaju tekstualni sloj, pa
+    // ih zadani parser ucitava kao prazne chunkove; vizualni model umjesto toga
+    // procita sliku svake stranice i vrati tekst.
+    const parsingModelId = 'anthropic.claude-haiku-4-5-20251001-v1:0';
+    const parsingModelArn = `arn:aws:bedrock:${this.region}:${this.account}:inference-profile/eu.${parsingModelId}`;
+
+    // Inference profil rutira pozive po EU regijama, pa dozvola mora pokriti i
+    // sam profil i sve modele na koje moze preusmjeriti. Sve su regije u EU, sto
+    // znaci da tekst dokumenata ne napusta EU.
+    const parsingModelRegions = [
+      'eu-central-1',
+      'eu-west-1',
+      'eu-west-3',
+      'eu-north-1',
+      'eu-south-1',
+      'eu-south-2',
+    ];
+    const parsingModelArns = [
+      parsingModelArn,
+      ...parsingModelRegions.map(
+        (region) =>
+          `arn:aws:bedrock:${region}::foundation-model/${parsingModelId}`
+      ),
+    ];
+
     // stvaramo S3 bucket za pohranu vektorskih indeksa
     const dataBucket = new Bucket(this, s3BucketName, {
       bucketName: s3BucketName,
@@ -131,6 +156,12 @@ export class TvzMcpStack extends cdk.Stack {
               actions: ['bedrock:InvokeModel'],
               resources: [embeddingModelArn],
             }),
+            new PolicyStatement({
+              sid: 'BedrockInvokeParsingModel',
+              effect: Effect.ALLOW,
+              actions: ['bedrock:InvokeModel'],
+              resources: parsingModelArns,
+            }),
           ],
         }),
       },
@@ -180,6 +211,16 @@ export class TvzMcpStack extends cdk.Stack {
             breakpointPercentileThreshold: 95,
           },
         },
+        // parsingModality se namjerno ne postavlja na MULTIMODAL: time bi se slike
+        // izdvajale kao zasebni objekti i baza znanja bi trazila dodatni S3
+        // spremnik. Tekstualno parsiranje svejedno salje slike stranica modelu,
+        // sto je upravo ono sto skenirani dokumenti trebaju.
+        parsingConfiguration: {
+          parsingStrategy: 'BEDROCK_FOUNDATION_MODEL',
+          bedrockFoundationModelConfiguration: {
+            modelArn: parsingModelArn,
+          },
+        },
       },
       dataDeletionPolicy: 'DELETE',
     });
@@ -197,7 +238,6 @@ export class TvzMcpStack extends cdk.Stack {
           forceDockerBundling: false,
           externalModules: [],
         },
-        reservedConcurrentExecutions: 5,
         environment: {
           KNOWLEDGE_BASE_ID: knowledgeBase.attrKnowledgeBaseId,
           REGION: this.region,
@@ -215,8 +255,10 @@ export class TvzMcpStack extends cdk.Stack {
     );
 
     // Lambda funkcija koja pokrece sinkronizaciju baze znanja nakon S3 promjene.
-    // reservedConcurrentExecutions: 1 serijalizira navale uploada u jedan po jedan
-    // poziv, cime se izbjegava lavina paralelnih ingestion pokusaja
+    // Rezervirana konkurentnost se ne postavlja: racun ima limit od 10 istovremenih
+    // izvodenja, a AWS ne dopusta da nerezervirani dio padne ispod 10, pa je svaka
+    // rezervacija odbijena. Paralelni pozivi su ionako bezopasni jer handler hvata
+    // ConflictException kad je ingestion job vec u tijeku
     const startIngestionFunction = new NodejsFunction(
       this,
       'StartIngestionFunction',
@@ -229,7 +271,6 @@ export class TvzMcpStack extends cdk.Stack {
           forceDockerBundling: false,
           externalModules: [],
         },
-        reservedConcurrentExecutions: 1,
         environment: {
           KNOWLEDGE_BASE_ID: knowledgeBase.attrKnowledgeBaseId,
           DATA_SOURCE_ID: s3DataSource.attrDataSourceId,
@@ -303,13 +344,16 @@ export class TvzMcpStack extends cdk.Stack {
     usagePlan.addApiStage({ stage: api.deploymentStage });
     usagePlan.addApiKey(apiKey);
 
-    // mjesecni budzet s obavijestima na 50% i 90% stvarne potrosnje
+    // Mjesecni budzet s obavijestima na 50% i 90% stvarne potrosnje. Limit je
+    // postavljen prema raspolozivim kreditima ($200 ukupno), a ne prema
+    // ocekivanoj potrosnji — budzet od $100 mjesecno javio bi se tek kad je
+    // polovica kredita vec potrosena.
     new CfnBudget(this, 'TvzMcpBudget', {
       budget: {
         budgetName: 'tvz-mcp-monthly-budget',
         budgetType: 'COST',
         timeUnit: 'MONTHLY',
-        budgetLimit: { amount: 100, unit: 'USD' },
+        budgetLimit: { amount: 25, unit: 'USD' },
       },
       notificationsWithSubscribers: [50, 90].map((threshold) => ({
         notification: {
