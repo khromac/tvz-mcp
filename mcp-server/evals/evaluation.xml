@@ -2,53 +2,63 @@
 <!--
   Evaluacijski skup za tvz_search_docs alat.
 
-  VAZNO: odgovori su namjerno ostavljeni kao TODO. Korpus TVZ dokumentacije nije
-  dio ovog repozitorija, pa se tocan odgovor ne moze utvrditi bez provjere nad
-  deployanim sustavom. Postupak provjere opisan je u evals/README.md — tek nakon
-  njega ovaj skup postaje upotrebljiv kao mjerilo.
+  Odgovori su popunjeni 16. 8. 2026. nad deployanim sustavom, prema postupku iz
+  evals/README.md: svako pitanje postavljeno je kroz API, provjereno je da
+  `source` stvarno potkrepljuje odgovor, a odgovor je prepisan iz vracenog
+  teksta izvornog dokumenta.
+
+  Korpus u trenutku evaluacije: 25 dokumenata (~195 stranica) — Statut TVZ-a,
+  Pravilnik o studiranju, Pravilnik o ocjenjivanju, Pravilnik o stegovnoj
+  odgovornosti studenata, Pravilnik o studentskom pravobranitelju, Zakon o
+  studentskom zboru, obrasci molbi i uplatnice.
+
+  VAZNO za tumacenje rezultata: sest pitanja iz prve verzije ovog skupa
+  zamijenjeno je jer korpus na njih nacelno ne moze odgovoriti (vidi
+  evals/README.md, odjeljak "Zamijenjena pitanja"). To nije nedostatak sustava
+  nego granica korpusa i dio je nalaza evaluacije.
 
   Sva pitanja su neovisna jedno o drugom, iskljucivo za citanje (read-only) i
   odgovoriva s jednim do dva poziva alata.
 -->
 <evaluation>
   <qa_pair>
-    <question>Koliko ECTS bodova nosi zavrsni rad na strucnom studiju?</question>
-    <answer>TODO: provjeriti u korpusu i upisati tocan odgovor</answer>
+    <question>Pod kojim uvjetima student ima pravo na mirovanje prava i obveza?</question>
+    <answer>Za vrijeme trudnoce; za studenta roditelja koji koristi rodiljni i roditeljski dopust; za vrijeme dulje bolesti zbog koje student nije prisustvovao nastavi neprekidno najmanje 30 dana (uz potvrdu nadleznog lijecnika); za vrijeme medunarodne razmjene tijekom nastave ako se njome ne stjecu ECTS bodovi. Mirovanje se odobrava rjesenjem procelnika odjela na temelju obrazlozene i dokumentirane molbe predane Studentskoj sluzbi, odnosi se na cijelu akademsku godinu i ne moze se prekinuti tijekom nje. Izvor: pravilnik-o-studiranju.pdf</answer>
   </qa_pair>
   <qa_pair>
-    <question>Koji su uvjeti koje student mora ispuniti da bi prijavio temu zavrsnog rada?</question>
-    <answer>TODO: provjeriti u korpusu i upisati tocan odgovor</answer>
+    <question>Koliko bodova student mora ostvariti tijekom semestra da bi imao pravo izlaska na ispit?</question>
+    <answer>U pravilu najmanje 30 bodova ocjene, sto je 50% mogucih. Student s manje od 15 bodova (25% mogucih) ocjenjuje se ocjenom F i mora ponovno upisati kolegij sljedece akademske godine. Student s vise od 15 a manje od 30 bodova dobiva ocjenu FX i ima pravo pristupiti dopunskoj provjeri znanja. Izvor: pravilnik-o-ocjenjivanju.pdf, clanak 6.</answer>
   </qa_pair>
   <qa_pair>
-    <question>Koliko puta student smije izaci na ispit iz istog predmeta prije nego izgubi pravo na redovno polaganje?</question>
-    <answer>TODO: provjeriti u korpusu i upisati tocan odgovor</answer>
+    <question>Koje se stegovne mjere mogu izreci studentu?</question>
+    <answer>Sest mjera: 1. usmena opomena nastavnika (za lakse oblike), 2. pisana opomena, 3. opomena pred iskljucenje, 4. zabrana polaganja ispita i/ili pohadanja odredenih oblika nastave do 6 mjeseci, 5. iskljucenje iz studija do dvije godine, 6. trajno iskljucenje iz studija. Mjere 5. i 6. mogu se izreci samo za teske oblike stegovnih djela. Izvor: pravilnik-o-stegovnoj-odgovornosti-studenata.pdf, clanak 5.</answer>
   </qa_pair>
   <qa_pair>
-    <question>Koliko ECTS bodova student mora skupiti da bi upisao sljedecu godinu studija?</question>
-    <answer>TODO: provjeriti u korpusu i upisati tocan odgovor</answer>
+    <question>Koliko iznosi zastara za pokretanje stegovnog postupka protiv studenta?</question>
+    <answer>Stegovni postupak ne moze se pokrenuti ako je proteklo 12 mjeseci od dana pocinjenja djela, a zastara nastupa u svakom slucaju kada protekne 2 godine od dana pocinjenja. Zastara stegovnog gonjenja ne tece u razdoblju od 1. srpnja do 31. kolovoza tekuce akademske godine. Izvor: pravilnik-o-stegovnoj-odgovornosti-studenata.pdf, clanak 6.</answer>
   </qa_pair>
   <qa_pair>
-    <question>Pod kojim uvjetima student moze zatraziti mirovanje studentskih obveza?</question>
-    <answer>TODO: provjeriti u korpusu i upisati tocan odgovor</answer>
+    <question>Tko moze biti studentski pravobranitelj i koje su njegove ovlasti?</question>
+    <answer>Imenuje ga studentski zbor na vrijeme od jedne godine, uz mogucnost jednog ponavljanja mandata, a mora ispunjavati uvjete za clana studentskog zbora. Ne moze se kandidirati student koji u posljednje dvije godine studija nije skupio najmanje 60 ECTS bodova ili koji drugi put ponavlja godinu. Ovlasti: prima prituzbe studenata koje se odnose na njihova prava i raspravlja o njima s nadleznim tijelima, savjetuje studente o nacinu ostvarivanja prava te moze sudjelovati u stegovnim postupcima protiv studenata. Izvori: zakon-o-studentskom-zboru.pdf, pravilnik-o-studentskom-pravobranitelju.pdf</answer>
   </qa_pair>
   <qa_pair>
-    <question>Koliko ispitnih rokova se organizira u jednoj akademskoj godini i kako su rasporedeni?</question>
-    <answer>TODO: provjeriti u korpusu i upisati tocan odgovor</answer>
+    <question>Kada se odrzavaju redoviti ispitni rokovi u akademskoj godini?</question>
+    <answer>Tri redovita roka: veljaca (zimski), lipanj/srpanj (ljetni) i rujan (jesenski), a definiraju se akademskim kalendarom i odrzavaju istovremeno za studente u redovnom i izvanrednom statusu. Ispitni rokovi iz istog kolegija moraju biti u razmaku od najmanje 5 dana. Uz njih postoji i dekanski rok, izvanredan rok u drugom tjednu rujna na kojem student moze pristupiti ispitu iz najvise jednog kolegija, a odluku o njemu donosi dekan. Izvor: pravilnik-o-studiranju.pdf</answer>
   </qa_pair>
   <qa_pair>
-    <question>Koji je rok za podnosenje prigovora na ocjenu ispita?</question>
-    <answer>TODO: provjeriti u korpusu i upisati tocan odgovor</answer>
+    <question>Koji je rok za zalbu na ocjenu ispita i tko cini povjerenstvo za ponovni ispit?</question>
+    <answer>Student koji nije zadovoljan ocjenom podnosi obrazlozeni pisani zahtjev molbom putem studentske sluzbe u roku od 24 sata nakon priopcenja ocjene. Ako je zahtjev opravdan, procelnik ga odobrava i u roku od dva radna dana imenuje Povjerenstvo od tri clana, pri cemu nositelj kolegija mora biti jedan od clanova. Izvor: pravilnik-o-studiranju.pdf</answer>
   </qa_pair>
   <qa_pair>
-    <question>Koje su strucne studije i koji akademski nazivi se stjecu njihovim zavrsetkom na racunarstvu?</question>
-    <answer>TODO: provjeriti u korpusu i upisati tocan odgovor</answer>
+    <question>Kada student stjece pravo polagati ispit pred ispitnim povjerenstvom zbog broja izlazaka na ispit?</question>
+    <answer>Kod cetvrtog polaganja ispita u jednoj akademskoj godini na strucnom studiju, odnosno kod sestog polaganja na izvanrednom studiju, student ima pravo pisanim zahtjevom voditelju studija traziti polaganje pred ispitnim povjerenstvom. Izvor: pravilnik-o-ocjenjivanju.pdf</answer>
   </qa_pair>
   <qa_pair>
-    <question>Koliko traje strucna praksa i koliko ECTS bodova nosi?</question>
-    <answer>TODO: provjeriti u korpusu i upisati tocan odgovor</answer>
+    <question>Koliko izostanaka s nastave je dopusteno studentu?</question>
+    <answer>Za studente u redovitom statusu izostanci ne smiju premasiti 30% satnice predavanja i 30% satnice vjezbi pojedinog kolegija, a za studente u izvanrednom statusu 50% predavanja i 50% vjezbi. Nositelj kolegija moze traziti vecu nazocnost za pojedine oblike nastave, ali je tada duzan osigurati nadoknadu. Izvor: pravilnik-o-studiranju.pdf</answer>
   </qa_pair>
   <qa_pair>
-    <question>Koji je postupak obrane zavrsnog rada i tko cini povjerenstvo za obranu?</question>
-    <answer>TODO: provjeriti u korpusu i upisati tocan odgovor</answer>
+    <question>Koji su rokovi za prijavu i odjavu ispita?</question>
+    <answer>Student prijavljuje ispit putem sustava ISVU na studomatima ili putem Interneta najkasnije 5 dana prije ispitnog roka. Odjava ispita moguca je najkasnije do pocetka radnog dana koji prethodi datumu ispitnog roka, dakle 24 sata ranije. Izvor: pravilnik-o-studiranju.pdf, clanak 43.</answer>
   </qa_pair>
 </evaluation>
