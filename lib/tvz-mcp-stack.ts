@@ -48,7 +48,11 @@ export class TvzMcpStack extends cdk.Stack {
     // Model za parsiranje dokumenata. Skenirani PDF-ovi nemaju tekstualni sloj, pa
     // ih zadani parser ucitava kao prazne chunkove; vizualni model umjesto toga
     // procita sliku svake stranice i vrati tekst.
-    const parsingModelId = 'anthropic.claude-haiku-4-5-20251001-v1:0';
+    // Sonnet umjesto Haikua: Anthropic modeli traze da vlasnik racuna ispuni
+    // obrazac o namjeni koristenja, a na ovom racunu je odobren samo za Sonnet
+    // obitelj (Haiku 4.5 i Opus imaju agreementAvailability NOT_AVAILABLE, pa je
+    // svaki dokument padao s generickom greskom pri parsiranju).
+    const parsingModelId = 'anthropic.claude-sonnet-4-6';
     const parsingModelArn = `arn:aws:bedrock:${this.region}:${this.account}:inference-profile/eu.${parsingModelId}`;
 
     // Inference profil rutira pozive po EU regijama, pa dozvola mora pokriti i
@@ -90,6 +94,17 @@ export class TvzMcpStack extends cdk.Stack {
       dataType: 'float32',
       dimension: 1024,
       distanceMetric: 'cosine',
+      // Metapodaci su po zadanom filtrabilni, a filtrabilni dio je ogranicen na
+      // 2048 bajtova po vektoru. Baza znanja u njega sprema cijeli tekst chunka,
+      // pa chunk od 300 tokena hrvatskog teksta probije granicu i ingestija padne
+      // s "Filterable metadata must have at most 2048 bytes". Oba kljuca koja
+      // Bedrock koristi zato oznacavamo kao nefiltrabilna.
+      metadataConfiguration: {
+        nonFilterableMetadataKeys: [
+          'AMAZON_BEDROCK_TEXT',
+          'AMAZON_BEDROCK_METADATA',
+        ],
+      },
     });
     vectorIndex.applyRemovalPolicy(RemovalPolicy.DESTROY);
     vectorIndex.addDependency(vectorBucket);
