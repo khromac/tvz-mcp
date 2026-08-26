@@ -48,11 +48,14 @@ export class TvzMcpStack extends cdk.Stack {
     // Model za parsiranje dokumenata. Skenirani PDF-ovi nemaju tekstualni sloj, pa
     // ih zadani parser ucitava kao prazne chunkove; vizualni model umjesto toga
     // procita sliku svake stranice i vrati tekst.
-    // Sonnet umjesto Haikua: Anthropic modeli traze da vlasnik racuna ispuni
-    // obrazac o namjeni koristenja, a na ovom racunu je odobren samo za Sonnet
-    // obitelj (Haiku 4.5 i Opus imaju agreementAvailability NOT_AVAILABLE, pa je
-    // svaki dokument padao s generickom greskom pri parsiranju).
-    const parsingModelId = 'anthropic.claude-sonnet-4-6';
+    // Model je biran mjerenjem na cetiri skenirane stranice ovog korpusa, uz istu
+    // uputu i temperaturu 0. Nova 2 Lite je pogodila 98% rijeci s dijakritickim
+    // znakovima bez ijednog ispadanja sadrzaja, uz najnizu cijenu od svih
+    // isprobanih. Sonnet 4.6 je bio jedini sa 100%, ali osjetno skuplji, a
+    // parsiranje se naplacuje po stranici. Haiku 4.5 je odbacen: nedeterministicki
+    // izostavlja odlomke (u jednoj ingestiji izgubio je cijeli clanak o zastari) i
+    // propusta cirilicne znakove u hrvatski tekst.
+    const parsingModelId = 'amazon.nova-2-lite-v1:0';
     const parsingModelArn = `arn:aws:bedrock:${this.region}:${this.account}:inference-profile/eu.${parsingModelId}`;
 
     // Inference profil rutira pozive po EU regijama, pa dozvola mora pokriti i
